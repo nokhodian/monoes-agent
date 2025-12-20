@@ -1,0 +1,315 @@
+{
+  "actionType": "KEYWORD_SEARCH",
+  "platform": "INSTAGRAM",
+  "version": "1.0.1",
+  "description": "Search for posts and extract user profile information from each post",
+  "metadata": {
+    "requiresAuth": true,
+    "supportsPagination": true,
+    "supportsRetry": true
+  },
+  "inputs": {
+    "required": ["keyword", "maxResultsCount"],
+    "optional": []
+  },
+  "outputs": {
+    "success": ["resultsCount", "maxResultsCount"],
+    "failure": []
+  },
+  "steps": [
+    {
+      "id": "parse_keywords",
+      "type": "update_progress",
+      "set": {
+        "keyword": "{{keyword}}"
+      }
+    },
+    {
+      "id": "build_search_url",
+      "type": "update_progress",
+      "set": {
+        "searchUrl": "https://www.instagram.com/explore/tags/{{keyword}}/"
+      }
+    },
+    {
+      "id": "initialize_collection",
+      "type": "update_progress",
+      "set": {
+        "configContext": "KEYWORD_SEARCH_MAIN_PAGE"
+      }
+    },
+    {
+      "id": "navigate_to_search",
+      "type": "navigate",
+      "url": "{{searchUrl}}",
+      "waitFor": "page_load",
+      "timeout": 30,
+      "onError": {
+        "action": "retry",
+        "maxRetries": 3
+      }
+    },
+    {
+      "id": "wait_for_search_load",
+      "type": "wait",
+      "duration": 3.0,
+      "waitFor": "time"
+    },
+    {
+      "id": "wait_for_posts",
+      "type": "wait",
+      "duration": 10,
+      "waitFor": "element_visible",
+      "xpath": "//a[contains(@href, '/p/')]"
+    },
+    {
+      "id": "setup_search_page_context",
+      "type": "update_progress",
+      "set": {
+        "configContext": "KEYWORD_SEARCH_MAIN_PAGE"
+      }
+    },
+    {
+      "id": "extract_post_urls",
+      "type": "extract_multiple",
+      "configKey": "post_link",
+      "attribute": "href",
+      "timeout": 10,
+      "alternatives": [
+        "//a[contains(@href, '/p/')]",
+        "//a[contains(@href, '/reel/')]"
+      ]
+    },
+    {
+      "id": "store_post_urls",
+      "type": "update_progress",
+      "set": {
+        "postUrls": "{{extract_post_urls.data}}",
+        "resultsCount": "{{extract_post_urls.count}}"
+      }
+    },
+    {
+      "id": "navigate_to_post",
+      "type": "navigate",
+      "url": "{{item}}",
+      "waitFor": "page_load",
+      "timeout": 30,
+      "onError": {
+        "action": "skip"
+      }
+    },
+    {
+      "id": "wait_for_post_load",
+      "type": "wait",
+      "duration": 3.0,
+      "waitFor": "time"
+    },
+    {
+      "id": "setup_post_page_context",
+      "type": "update_progress",
+      "set": {
+        "configContext": "POST_PAGE"
+      }
+    },
+    {
+      "id": "extract_profile_link",
+      "type": "extract_attribute",
+      "xpath": "(//a[contains(@class, 'notranslate') and not(contains(@href, '/p/')) and not(contains(@href, '/explore/')) and not(contains(@href, '/reels/')) and @href!='/'])[1]",
+      "attribute": "href",
+      "timeout": 10,
+      "alternatives": [
+        "profile_link",
+        "//a[.//img[contains(@alt, 'profile picture')] and not(contains(@href, '/p/'))]",
+        "//header//a[not(contains(@href, '/p/')) and not(contains(@href, '/explore/'))]"
+      ],
+      "onError": {
+        "action": "skip"
+      }
+    },
+    {
+      "id": "set_initial_profile_url",
+      "type": "update_progress",
+      "set": {
+        "profileUrl": "{{extract_profile_link.data}}"
+      }
+    },
+    {
+      "id": "check_if_metadata_needed",
+      "type": "condition",
+      "condition": "profileUrl == '' or profileUrl == None",
+      "then": [
+        "extract_profile_metadata",
+        "update_profile_url_from_metadata"
+      ]
+    },
+    {
+      "id": "extract_profile_metadata",
+      "type": "call_bot_method",
+      "method": "extract_username_from_metadata",
+      "variable_name": "metadata_url"
+    },
+    {
+      "id": "update_profile_url_from_metadata",
+      "type": "update_progress",
+      "set": {
+        "profileUrl": "{{metadata_url}}"
+      }
+    },
+    {
+      "id": "check_profile_link_extracted",
+      "type": "condition",
+      "condition": "profileUrl != '' and profileUrl != None",
+      "then": [
+        "navigate_to_profile",
+        "wait_for_profile_load",
+        "setup_profile_page_context",
+        "extract_full_name",
+        "extract_profile_image",
+        "extract_followers",
+        "extract_posts_count",
+        "extract_following",
+        "extract_bio",
+        "extract_website",
+        "extract_verified",
+        "build_profile_data",
+        "save_profile_data"
+      ],
+      "else": ["skip_post_log"]
+    },
+    {
+      "id": "navigate_to_profile",
+      "type": "navigate",
+      "url": "{{profileUrl}}",
+      "waitFor": "page_load",
+      "timeout": 30
+    },
+    {
+      "id": "wait_for_profile_load",
+      "type": "wait",
+      "duration": 3.0,
+      "waitFor": "time"
+    },
+    {
+      "id": "setup_profile_page_context",
+      "type": "update_progress",
+      "set": {
+        "configContext": "PROFILE_PAGE"
+      }
+    },
+    {
+      "id": "extract_full_name",
+      "type": "extract_text",
+      "configKey": "full_name",
+      "timeout": 10,
+      "variable_name": "full_name_elem",
+      "onError": { "action": "continue" }
+    },
+    {
+      "id": "extract_profile_image",
+      "type": "extract_attribute",
+      "configKey": "profile_image",
+      "attribute": "src",
+      "timeout": 10,
+      "variable_name": "profile_image_elem",
+      "onError": { "action": "continue" }
+    },
+    {
+      "id": "extract_followers",
+      "type": "extract_text",
+      "configKey": "followers_count",
+      "timeout": 10,
+      "variable_name": "followers_elem"
+    },
+    {
+      "id": "extract_posts_count",
+      "type": "extract_text",
+      "configKey": "post_count",
+      "timeout": 10,
+      "variable_name": "posts_elem",
+      "onError": { "action": "continue" }
+    },
+    {
+      "id": "extract_following",
+      "type": "extract_text",
+      "configKey": "following_count",
+      "timeout": 10,
+      "variable_name": "following_elem"
+    },
+    {
+      "id": "extract_bio",
+      "type": "extract_text",
+      "configKey": "bio",
+      "timeout": 10,
+      "variable_name": "bio_elem",
+      "onError": { "action": "continue" }
+    },
+    {
+      "id": "extract_website",
+      "type": "extract_attribute",
+      "configKey": "website",
+      "attribute": "href",
+      "timeout": 5,
+      "variable_name": "website_elem",
+      "onError": { "action": "continue" }
+    },
+    {
+      "id": "extract_verified",
+      "type": "find_element",
+      "configKey": "is_verified",
+      "timeout": 5,
+      "variable_name": "verified_elem",
+      "onError": { "action": "continue" }
+    },
+    {
+      "id": "build_profile_data",
+      "type": "update_progress",
+      "set": {
+        "profileData": {
+          "platform": "INSTAGRAM",
+          "url": "{{profileUrl}}",
+          "full_name": "{{full_name_elem}}",
+          "image_url": "{{profile_image_elem}}",
+          "follower_count": "{{followers_elem}}",
+          "content_count": "{{posts_elem}}",
+          "following_count": "{{following_elem}}",
+          "introduction": "{{bio_elem}}",
+          "website": "{{website_elem}}",
+          "is_verified": "{{verified_elem}}"
+        }
+      }
+    },
+    {
+      "id": "save_profile_data",
+      "type": "save_data",
+      "dataSource": "build_profile_data",
+      "batchSize": 1
+    },
+    {
+      "id": "skip_post_log",
+      "type": "log",
+      "description": "Skipping post - profile link not found",
+      "value": "Post URL: {{item}}"
+    }
+  ],
+  "loops": [
+    {
+      "id": "process_posts_loop",
+      "iterator": "extract_post_urls.data",
+      "indexVar": "postIndex",
+      "steps": [
+        "navigate_to_post",
+        "wait_for_post_load",
+        "setup_post_page_context",
+        "extract_profile_link",
+        "set_initial_profile_url",
+        "check_if_metadata_needed",
+        "check_profile_link_extracted"
+      ]
+    }
+  ],
+  "errorHandling": {
+    "globalRetries": 3,
+    "retryDelay": 2000,
+    "onFinalFailure": "log_and_continue"
+  }
+}

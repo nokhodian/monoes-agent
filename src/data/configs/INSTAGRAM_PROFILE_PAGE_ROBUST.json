@@ -1,0 +1,69 @@
+{
+  "name": "profile_info",
+  "xpath": "//main",
+  "data": [
+    {
+      "name": "full_name",
+      "xpath": ".//h2 | .//span[contains(@class, 'x1lliihq') and not(ancestor::a)]",
+      "alternatives": [
+        "//header//h2",
+        "//h1",
+        "(//span[contains(@class, 'x1lliihq')])[1]"
+      ]
+    },
+    {
+      "name": "profile_image",
+      "xpath": ".//img[contains(@alt, 'profile picture')]/@src",
+      "alternatives": [
+        ".//header//img/@src",
+        "//img[contains(@class, 'xpdipih')]/@src"
+      ]
+    },
+    {
+      "name": "post_count",
+      "xpath": "//header//ul/li[1]//span",
+      "alternatives": [
+        "//li[contains(., 'posts')]//span",
+        "//ul/li[1]//span"
+      ]
+    },
+    {
+      "name": "followers_count",
+      "xpath": "//header//ul/li[2]//span",
+      "alternatives": [
+        "//li[contains(., 'followers')]//span",
+        "//ul/li[2]//span"
+      ]
+    },
+    {
+      "name": "following_count",
+      "xpath": "//header//ul/li[3]//span",
+      "alternatives": [
+        "//li[contains(., 'following')]//span",
+        "//ul/li[3]//span"
+      ]
+    },
+    {
+      "name": "bio",
+      "xpath": "//header//section//div[contains(@class, 'x1v3pt97')]//span | //header//section//div[not(@role='button')]//span",
+      "alternatives": [
+        "//main//header//section//span",
+        "//header//section//div//span"
+      ]
+    },
+    {
+      "name": "website",
+      "xpath": "//header//section//a[@role='link' and @target='_blank']/@href",
+      "alternatives": [
+        "//header//section//a[not(contains(@href, 'instagram.com'))]/@href"
+      ]
+    },
+    {
+      "name": "verified",
+      "xpath": "//header//span[@title='Verified']",
+      "alternatives": [
+        "//span[contains(@title, 'Verified')]"
+      ]
+    }
+  ]
+}

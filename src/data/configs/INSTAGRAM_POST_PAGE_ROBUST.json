@@ -1,0 +1,22 @@
+{
+  "name": "post_info",
+  "xpath": "//article | //main",
+  "data": [
+    {
+      "name": "profile_link",
+      "xpath": "(//a[contains(@class, 'notranslate') and not(contains(@href, '/p/')) and not(contains(@href, '/explore/')) and not(contains(@href, '/reels/')) and @href!='/'])[1]/@href",
+      "alternatives": [
+        "//a[.//img[contains(@alt, 'profile picture')] and not(contains(@href, '/p/'))]/@href",
+        "//header//a[not(contains(@href, '/p/'))]/@href"
+      ]
+    },
+    {
+      "name": "username",
+      "xpath": "(//a[contains(@class, 'notranslate') and not(contains(@href, '/p/')) and not(contains(@href, '/explore/')) and not(contains(@href, '/reels/')) and @href!='/'])[1]//span",
+      "alternatives": [
+        "//span[contains(@class, '_ap3a') and contains(@class, '_aaco') and not(ancestor::a[contains(@href, '/p/')])]",
+        "//header//a[not(contains(@href, '/p/'))]//span"
+      ]
+    }
+  ]
+}

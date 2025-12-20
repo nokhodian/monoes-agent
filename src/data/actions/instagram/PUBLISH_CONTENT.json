@@ -1,0 +1,130 @@
+{
+  "actionType": "PUBLISH_CONTENT",
+  "platform": "INSTAGRAM",
+  "version": "1.0.0",
+  "description": "Publish content (post/story) to Instagram",
+  "metadata": {
+    "requiresAuth": true,
+    "supportsPagination": false,
+    "supportsRetry": true
+  },
+  "inputs": {
+    "required": ["text", "media"],
+    "optional": ["locationTag", "selectedListItems"]
+  },
+  "outputs": {
+    "success": [],
+    "failure": []
+  },
+  "steps": [
+    {
+      "id": "navigate_to_create",
+      "type": "navigate",
+      "url": "https://www.instagram.com/",
+      "waitFor": "page_load",
+      "timeout": 30
+    },
+    {
+      "id": "find_create_button",
+      "type": "find_element",
+      "xpath": "//a[contains(@href, '/create')] | //button[contains(@aria-label, 'New post')]",
+      "timeout": 10
+    },
+    {
+      "id": "click_create",
+      "type": "click",
+      "elementRef": "find_create_button",
+      "waitFor": "upload_dialog_visible"
+    },
+    {
+      "id": "find_file_input",
+      "type": "find_element",
+      "xpath": "//input[@type='file']",
+      "timeout": 10
+    },
+    {
+      "id": "upload_media",
+      "type": "type",
+      "elementRef": "find_file_input",
+      "text": "{{media[0].url}}",
+      "onError": {
+        "action": "retry",
+        "maxRetries": 2
+      }
+    },
+    {
+      "id": "wait_for_upload",
+      "type": "wait",
+      "duration": 5.0,
+      "waitFor": "time"
+    },
+    {
+      "id": "find_next_button",
+      "type": "find_element",
+      "xpath": "//button[contains(text(), 'Next')]",
+      "timeout": 15
+    },
+    {
+      "id": "click_next",
+      "type": "click",
+      "elementRef": "find_next_button",
+      "waitFor": "caption_screen_visible"
+    },
+    {
+      "id": "find_caption_input",
+      "type": "find_element",
+      "xpath": "//textarea[@aria-label='Write a caption...'] | //textarea",
+      "timeout": 15
+    },
+    {
+      "id": "type_caption",
+      "type": "type",
+      "elementRef": "find_caption_input",
+      "text": "{{text}}",
+      "humanLike": true
+    },
+    {
+      "id": "check_has_location",
+      "type": "condition",
+      "condition": "locationTag != ''",
+      "then": ["add_location"],
+      "else": []
+    },
+    {
+      "id": "add_location",
+      "type": "find_element",
+      "xpath": "//input[@placeholder='Add location']",
+      "timeout": 5
+    },
+    {
+      "id": "type_location",
+      "type": "type",
+      "elementRef": "add_location",
+      "text": "{{locationTag}}"
+    },
+    {
+      "id": "find_share_button",
+      "type": "find_element",
+      "xpath": "//button[contains(text(), 'Share')]",
+      "timeout": 10
+    },
+    {
+      "id": "click_share",
+      "type": "click",
+      "elementRef": "find_share_button",
+      "waitFor": "post_published",
+      "onSuccess": {
+        "action": "update_progress"
+      }
+    }
+  ],
+  "errorHandling": {
+    "globalRetries": 3,
+    "retryDelay": 2000,
+    "onFinalFailure": "log_and_continue"
+  }
+}
+
+
+
+

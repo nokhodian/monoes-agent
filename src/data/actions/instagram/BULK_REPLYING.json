@@ -1,0 +1,115 @@
+{
+  "actionType": "BULK_REPLYING",
+  "platform": "INSTAGRAM",
+  "version": "1.0.0",
+  "description": "Reply to messages in Instagram inbox",
+  "metadata": {
+    "requiresAuth": true,
+    "supportsPagination": true,
+    "supportsRetry": true
+  },
+  "inputs": {
+    "required": ["startDate", "endDate", "pollInterval"],
+    "optional": ["selectedListItems"]
+  },
+  "outputs": {
+    "success": ["itemsCount", "reachedIndex"],
+    "failure": ["failedItems"]
+  },
+  "steps": [
+    {
+      "id": "navigate_to_inbox",
+      "type": "navigate",
+      "url": "https://www.instagram.com/direct/inbox/",
+      "waitFor": "page_load",
+      "timeout": 30
+    },
+    {
+      "id": "wait_for_inbox_load",
+      "type": "wait",
+      "duration": 3.0,
+      "waitFor": "time"
+    },
+    {
+      "id": "find_conversation_list",
+      "type": "find_element",
+      "xpath": "//div[contains(@role, 'list')] | //ul[contains(@class, 'conversation-list')]",
+      "timeout": 15
+    },
+    {
+      "id": "extract_conversations",
+      "type": "extract_multiple",
+      "xpath": "//div[contains(@role, 'listitem')] | //a[contains(@href, '/direct/t/')]",
+      "onSuccess": {
+        "action": "save_data"
+      }
+    },
+    {
+      "id": "filter_by_date_range",
+      "type": "update_progress",
+      "set": {
+        "filteredConversations": "{{extract_conversations}}"
+      }
+    },
+    {
+      "id": "open_conversation",
+      "type": "navigate",
+      "url": "{{conversation.url}}",
+      "waitFor": "page_load",
+      "timeout": 15
+    },
+    {
+      "id": "find_message_input",
+      "type": "find_element",
+      "xpath": "//textarea[@placeholder] | //div[@contenteditable='true']",
+      "timeout": 10
+    },
+    {
+      "id": "type_reply",
+      "type": "type",
+      "elementRef": "find_message_input",
+      "text": "{{replyText}}",
+      "humanLike": true
+    },
+    {
+      "id": "find_send_button",
+      "type": "find_element",
+      "xpath": "//button[contains(text(), 'Send')] | //button[@type='submit']",
+      "timeout": 10
+    },
+    {
+      "id": "click_send",
+      "type": "click",
+      "elementRef": "find_send_button",
+      "waitFor": "message_sent",
+      "onSuccess": {
+        "action": "update_progress",
+        "increment": "reachedIndex"
+      }
+    }
+  ],
+  "loops": [
+    {
+      "id": "process_conversations",
+      "iterator": "filteredConversations",
+      "indexVar": "reachedIndex",
+      "steps": [
+        "open_conversation",
+        "find_message_input",
+        "type_reply",
+        "find_send_button",
+        "click_send"
+      ],
+      "onComplete": "update_action_state"
+    }
+  ],
+  "errorHandling": {
+    "globalRetries": 3,
+    "retryDelay": 2000,
+    "onFinalFailure": "log_and_continue"
+  }
+}
+
+
+
+

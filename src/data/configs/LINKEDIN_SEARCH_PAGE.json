@@ -1,0 +1,46 @@
+{
+  "name": "LINKEDIN_SEARCH_PAGE",
+  "fields": {
+    "name": "root",
+    "data": [
+      {
+        "name": "search_result_container",
+        "xpath": "//div[@role='list']",
+        "alternatives": [
+          "//ul[contains(@class, 'reusable-search__entity-result-list')]",
+          "//ul[contains(@class, 'search-results__list')]"
+        ]
+      },
+      {
+        "name": "people",
+        "xpath": ".//div[@role='listitem']",
+        "alternatives": [
+          ".//li[contains(@class, 'reusable-search__result-container')]"
+        ],
+        "data": [
+          {
+            "name": "name",
+            "xpath": ".//a[@data-view-name='search-result-lockup-title']",
+            "alternatives": [
+              ".//span[contains(@class, 'entity-result__title-text')]//a//span/span[1]"
+            ]
+          },
+          {
+            "name": "url",
+            "xpath": ".//a[@data-view-name='search-result-lockup-title']/@href",
+            "alternatives": [
+              ".//span[contains(@class, 'entity-result__title-text')]//a/@href"
+            ]
+          },
+          {
+            "name": "headline",
+            "xpath": ".//a[@data-view-name='search-result-lockup-title']/../following-sibling::div[1]/p",
+            "alternatives": [
+              ".//div[contains(@class, 'entity-result__primary-subtitle')]"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

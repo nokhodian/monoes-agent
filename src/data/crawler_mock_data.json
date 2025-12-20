@@ -1,0 +1,18 @@
+{
+  "crawlerXpath": {
+    "instagramXpath": {},
+    "linkedinXpath": {},
+    "tiktokXpath": {}
+  },
+  "hello": {},
+  "chromeVersion": "",
+  "firefoxVersion": "default",
+  "headless": false,
+  "User-Agent": {
+    "instagram": "",
+    "linkedin": "",
+    "tiktok": "",
+    "twitter": ""
+  },
+  "message": "Mock response - loaded from crawler_mock_data.json"
+} 

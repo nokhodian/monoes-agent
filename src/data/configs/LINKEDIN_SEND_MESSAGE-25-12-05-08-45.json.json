@@ -1,0 +1,52 @@
+{
+    "configName": "LINKEDIN_SEND_MESSAGE-25-12-05-08-45.json",
+    "config": {
+        "name": "message_interaction",
+        "description": "Elements required to send a message",
+        "type": "object",
+        "data": [
+            {
+                "name": "message_btn_icon",
+                "description": "The button to initiate a message (icon version)",
+                "type": "string",
+                "xpath": "//button[contains(@class, 'send-privately-button')]"
+            },
+            {
+                "name": "message_btn",
+                "description": "The button to initiate a message (text version)",
+                "type": "string",
+                "xpath": "//button[contains(@class, 'send-privately-button')]"
+            },
+            {
+                "name": "message_overlay_input",
+                "description": "The input field in the message overlay",
+                "type": "string",
+                "xpath": null
+            },
+            {
+                "name": "btn_message_close",
+                "description": "The button to close the message overlay",
+                "type": "string",
+                "xpath": null
+            },
+            {
+                "name": "send_button",
+                "description": "The button to send the message",
+                "type": "string",
+                "xpath": null
+            },
+            {
+                "name": "connect_btn",
+                "description": "The Connect button if message is not available",
+                "type": "string",
+                "xpath": null
+            },
+            {
+                "name": "more_btn",
+                "description": "The 'More' button to find Connect option",
+                "type": "string",
+                "xpath": null
+            }
+        ]
+    }
+}
