@@ -299,7 +299,7 @@ class Backend(QObject):
             action = Actions(action_data)
             
             self.logger.info("Executing...")
-            runner = ActionRunner(bot, action)
+            runner = ActionRunner(bot, action, api_client=RestAPI)
             runner.run()
             
             self.logger.info("Done!")

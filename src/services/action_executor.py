@@ -4,6 +4,12 @@ Executes action definitions from JSON files.
 """
 import logging
 import time
+import json
+import traceback
+import re
+import os
+from copy import deepcopy
+from datetime import datetime
 from typing import Dict, Any, Optional, List, Callable
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -337,16 +343,17 @@ class ActionExecutor:
                 })
                 
                 # Resolve variables in step definition
-                resolved_step = self.resolver.resolve_dict(step_def)
-                
-                logger.debug(f"Step {step_id} resolved: {resolved_step}")
+                logger.debug(f"Step {step_id}: Resolving variables...")
+                resolved_step = self.resolver.resolve_dict(deepcopy(step_def))
+                logger.info(f"Step {step_id} (resolved type: {resolved_step.get('type')}) starting...")
                 
                 # Execute step
                 step_result = self._execute_step(resolved_step)
                 
-                print(f"DEBUG: Step {step_id} executed. Success: {step_result.get('success')}")
+                print(f"✅ Step {step_id} executed. Success: {step_result.get('success')}")
                 if 'data' in step_result:
-                    print(f"DEBUG: Step {step_id} data: {step_result['data']}")
+                    data_preview = str(step_result['data'])[:200]
+                    print(f"📊 Step {step_id} data preview: {data_preview}")
                 
                 logger.info(f"Step {step_id} result: success={step_result.get('success')}")
                 
@@ -379,16 +386,20 @@ class ActionExecutor:
                 if not step_result.get('success', False):
                     error_handler = step_def.get('onError')
                     if error_handler:
+                        logger.info(f"Step {step_id} failed. Handling with: {error_handler.get('action')}")
                         error_result = self.error_handler.handle_step_error(
                             error_handler, step_result, self.bot, self.context
                         )
                         if error_result.get('abort', False):
+                            logger.error(f"Step {step_id} failed and error handler chose to ABORT.")
                             results['success'] = False
                             results['abort'] = True
                             break
                         elif error_result.get('skip', False):
+                            logger.info(f"Step {step_id} failed and error handler chose to SKIP.")
                             continue
                     else:
+                        logger.error(f"Step {step_id} failed and no error handler provided. BREAKING.")
                         results['success'] = False
                         break
                 
@@ -398,7 +409,10 @@ class ActionExecutor:
                     self._handle_success_action(success_handler)
                 
             except Exception as e:
-                logger.error(f"Error executing step {step_id}: {e}", exc_info=True)
+                logger.error(f"CRITICAL ERROR executing step {step_id}: {e}")
+                logger.error(traceback.format_exc())
+                print(f"❌ CRITICAL ERROR in step {step_id}: {e}")
+                
                 results['steps'].append({
                     'id': step_id,
                     'type': step_type,
@@ -416,6 +430,7 @@ class ActionExecutor:
                     )
                     if error_result.get('abort', False):
                         break
+
         
         return results
     
@@ -614,6 +629,7 @@ class ActionExecutor:
         timeout = step_def.get('timeout', 20)
         wait_for = step_def.get('waitFor', 'element_visible')
         alternatives = step_def.get('alternatives', [])
+        variable_name = step_def.get('variable_name')
         
         # Try to get XPath from config
         config = None
@@ -777,6 +793,7 @@ class ActionExecutor:
     
     def _step_extract_text(self, step_def: Dict[str, Any]) -> Dict[str, Any]:
         """Extract text from element."""
+        variable_name = step_def.get('variable_name')
         element_ref = step_def.get('elementRef')
         config_key = step_def.get('configKey')
         step_id = step_def.get('id', 'extract_text')
@@ -858,10 +875,10 @@ class ActionExecutor:
     
     def _step_extract_attribute(self, step_def: Dict[str, Any]) -> Dict[str, Any]:
         """Extract an attribute from an element."""
+        variable_name = step_def.get('variable_name')
         element_ref = step_def.get('element')
         config_key = step_def.get('configKey')
         attribute = step_def.get('attribute')
-        variable_name = step_def.get('variable_name')
         step_id = step_def.get('id', 'extract_attribute')
         
         element = None
@@ -887,7 +904,6 @@ class ActionExecutor:
                 xpath = ConfigHelper.get_xpath(config, config_key)
                 if xpath:
                     # Check if xpath ends with attribute selector (e.g., /@href, /@src)
-                    import re
                     attr_match = re.search(r'/@(\w+)$', xpath)
                     if attr_match:
                         # Extract attribute directly using JavaScript evaluate for better reliability
@@ -945,7 +961,6 @@ class ActionExecutor:
             print(f"❌ extract_attribute: {error_msg}")
             # Save page source for debugging
             try:
-                import os
                 debug_path = os.path.join(os.getcwd(), f"debug_extract_fail_{step_id}.html")
                 with open(debug_path, "w", encoding="utf-8") as f:
                     f.write(self.bot.driver.page_source)
@@ -963,6 +978,16 @@ class ActionExecutor:
         try:
             print(f"🔍 extract_attribute: Found element, extracting '{attribute}'")
             value = element.get_attribute(attribute)
+            
+            # Fallback to text if attribute is missing (especially useful for websites in buttons)
+            if not value and (attribute == 'href' or attribute == 'src'):
+                try:
+                    text_fallback = element.text
+                    if text_fallback:
+                        print(f"ℹ️ extract_attribute: Attribute '{attribute}' empty, falling back to text: '{text_fallback}'")
+                        value = text_fallback
+                except:
+                    pass
             
             # Resolve relative URLs
             if value and value.startswith('/') and not value.startswith('//'):
@@ -1184,7 +1209,6 @@ class ActionExecutor:
             if isinstance(value, str):
                 # Check if the entire string is a single variable reference (e.g., "{{variable}}")
                 # If so, preserve the original type instead of converting to string
-                import re
                 single_var_pattern = re.compile(r'^\{\{([^}]+)\}\}$')
                 match = single_var_pattern.match(value)
                 
@@ -1220,26 +1244,37 @@ class ActionExecutor:
                 self.context['variables'][key] = resolved_dict
             else:
                 self.context['variables'][key] = value
-
+        
+        # Also store the resolved variables in self.context['data'] for the current step
+        # This allows other steps to use this step as a dataSource (e.g., in save_data)
+        step_id = step_def.get('id', 'update_progress')
+        self.context['data'][step_id] = self.context['variables'].copy()
+        
         return {'success': True}
     
     def _step_save_data(self, step_def: Dict[str, Any]) -> Dict[str, Any]:
         """Save extracted data."""
         try:
             # #region agent log
-            import json
-            from datetime import datetime
-            with open('/Users/morteza/Desktop/monoes/mono-agent/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"timestamp": datetime.now().timestamp() * 1000, "sessionId": "debug-session", "runId": "run1", "hypothesisId": "J", "location": "action_executor.py:775", "message": "_step_save_data: Starting", "data": {"dataSource": step_def.get('dataSource'), "batchSize": step_def.get('batchSize', 10)}}) + '\n')
             # #endregion
             
             # Get data source - could be from a specific step or all context data
             data_source = step_def.get('dataSource')  # Optional: specific step ID
             batch_size = step_def.get('batchSize', 10)  # Default batch size
             
+            # Use provided api_client or fallback to RestAPI
+            api_client = self.api_client
+            if not api_client:
+                from newAgent.src.api.APIs import RestAPI
+                api_client = RestAPI
+
+            # Get data from specific data source if provided
             if data_source:
-                # Save data from specific step
                 data_to_save = self.context.get('data', {}).get(data_source, [])
+                # If it's a single dictionary (not a list), wrap it in a list
+                if isinstance(data_to_save, dict):
+                    data_to_save = [data_to_save]
+                logger.info(f"_step_save_data: Got data from dataSource '{data_source}': {len(data_to_save) if isinstance(data_to_save, list) else 1} items")
             else:
                 # Collect all extracted data from current iteration
                 all_data = self.context.get('data', {})
@@ -1260,8 +1295,6 @@ class ActionExecutor:
                     data_to_save = [profile_data]
             
             # #region agent log
-            with open('/Users/morteza/Desktop/monoes/mono-agent/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"timestamp": datetime.now().timestamp() * 1000, "sessionId": "debug-session", "runId": "run1", "hypothesisId": "K", "location": "action_executor.py:805", "message": "_step_save_data: Data to save", "data": {"data_count": len(data_to_save) if isinstance(data_to_save, list) else 1, "data_source": data_source, "has_api_client": self.api_client is not None}}) + '\n')
             # #endregion
             
             # Format data for API (platform-specific formatting)
@@ -1272,14 +1305,12 @@ class ActionExecutor:
                 self.context['extracted_items'].extend(formatted_data)
                 
                 # Flush as many batches as possible
-                while len(self.context['extracted_items']) >= batch_size and self.api_client:
+                while len(self.context['extracted_items']) >= batch_size and api_client:
                     try:
                         batch = self.context['extracted_items'][:batch_size]
                         # #region agent log
-                        with open('/Users/morteza/Desktop/monoes/mono-agent/.cursor/debug.log', 'a') as f:
-                            f.write(json.dumps({"timestamp": datetime.now().timestamp() * 1000, "sessionId": "debug-session", "runId": "run1", "hypothesisId": "M", "location": "action_executor.py:820", "message": "_step_save_data: Calling create_people", "data": {"batch_size": len(batch)}}) + '\n')
                         # #endregion
-                        response = self.api_client.create_people(batch)
+                        response = api_client.create_people(batch)
                         
                         # Check for success
                         is_success = False
@@ -1311,22 +1342,46 @@ class ActionExecutor:
         formatted = []
         platform = getattr(self.action, 'source', '').upper()
         
+        def sanitize(val):
+            """Sanitize values for JSON serialization."""
+            if hasattr(val, 'id') and hasattr(val, 'tag_name'): # Likely a WebElement
+                return True
+            if isinstance(val, dict):
+                return {k: sanitize(v) for k, v in val.items()}
+            if isinstance(val, list):
+                return [sanitize(v) for v in val]
+            return val
+
         for item in data:
             if isinstance(item, dict):
-                # Already formatted
-                formatted.append(item)
+                # Check if it's already a well-formed profile dict
+                if 'platform' in item and ('url' in item or 'platform_username' in item):
+                    formatted.append(sanitize(item))
+                else:
+                    # It's a dict with data, but maybe needs structure
+                    # If it contains 'profileData', it's likely the actual data wrapped
+                    if 'profileData' in item and isinstance(item['profileData'], dict):
+                        data_fields = item['profileData']
+                    else:
+                        # Use the item itself, but filter out control keys
+                        data_fields = {k: v for k, v in item.items() if k not in ['configContext']}
+                    
+                    formatted.append({
+                        'platform': platform or 'INSTAGRAM',
+                        **sanitize(data_fields)
+                    })
             elif isinstance(item, str):
                 # URL or simple string - create basic structure
                 formatted.append({
-                    'platform': platform,
+                    'platform': platform or 'INSTAGRAM',
                     'url': item if item.startswith('http') else '',
                     'platform_username': item if not item.startswith('http') else ''
                 })
             else:
                 # Try to extract useful info
                 formatted.append({
-                    'platform': platform,
-                    'data': str(item)
+                    'platform': platform or 'INSTAGRAM',
+                    'data': sanitize(item)
                 })
         
         return formatted

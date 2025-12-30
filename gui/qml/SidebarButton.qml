@@ -1,6 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import QtGraphicalEffects 1.15
 
 Item {
     id: root
@@ -12,35 +13,62 @@ Item {
     Layout.preferredHeight: 60
     Layout.alignment: Qt.AlignHCenter
 
+    // Hover Animation
+    scale: mouseArea.containsMouse ? 1.1 : 1.0
+    Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutBack } }
+
     Rectangle {
+        id: bgRect
         anchors.centerIn: parent
         width: 50
         height: 50
-        radius: 8
-        color: root.isActive ? "#F0F0FF" : (mouseArea.containsMouse ? "#F5F5F5" : "transparent")
+        radius: 16
+        color: root.isActive ? "#E1F0FF" : (mouseArea.containsMouse ? "#F5F5F7" : "transparent")
+
+        Behavior on color { ColorAnimation { duration: 200 } }
 
         Image {
             id: iconImage
             source: root.iconSource
             anchors.centerIn: parent
-            width: 32
-            height: 32
+            width: 28
+            height: 28
             fillMode: Image.PreserveAspectFit
-            // Applying a color overlay effect to active icon if needed, 
-            // but for now we'll just use the SVG as is.
+            mipmap: true
+            visible: false // Hidden because we use ColorOverlay
         }
         
-        // Active indicator dot/bar if desired
+        ColorOverlay {
+            anchors.fill: iconImage
+            source: iconImage
+            color: root.isActive ? "#007AFF" : "#86868B"
+            Behavior on color { ColorAnimation { duration: 200 } }
+        }
+        
+        // Active indicator dot/bar - Replaced with a glow or refined indicator
         Rectangle {
             visible: root.isActive
-            anchors.left: parent.left
-            anchors.leftMargin: -15
+            anchors.right: parent.right
+            anchors.rightMargin: -12
             anchors.verticalCenter: parent.verticalCenter
             width: 4
-            height: 24
+            height: 20
             radius: 2
-            color: "#007AFF" // iOS-style blue
+            color: "#007AFF"
         }
+    }
+
+    // Shadow for active state
+    DropShadow {
+        anchors.fill: bgRect
+        source: bgRect
+        horizontalOffset: 0
+        verticalOffset: 4
+        radius: 8
+        samples: 17
+        color: root.isActive ? "#40007AFF" : "transparent"
+        visible: root.isActive
+        Behavior on color { ColorAnimation { duration: 200 } }
     }
 
     MouseArea {

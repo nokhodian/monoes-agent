@@ -137,10 +137,7 @@
       "id": "check_if_metadata_needed",
       "type": "condition",
       "condition": "profileUrl == '' or profileUrl == None",
-      "then": [
-        "extract_profile_metadata",
-        "update_profile_url_from_metadata"
-      ]
+      "then": ["extract_profile_metadata", "update_profile_url_from_metadata"]
     },
     {
       "id": "extract_profile_metadata",
@@ -255,7 +252,7 @@
     {
       "id": "extract_verified",
       "type": "find_element",
-      "configKey": "is_verified",
+      "configKey": "verified",
       "timeout": 5,
       "variable_name": "verified_elem",
       "onError": { "action": "continue" }

@@ -106,7 +106,7 @@ ACTION_SCHEMA = {
                         "find_element", "click", "type", "scroll", "hover",
                         "extract_text", "extract_attribute", "extract_multiple",
                         "condition", "loop", "call_action",
-                        "update_progress", "save_data", "mark_failed"
+                        "update_progress", "save_data", "mark_failed", "call_bot_method", "log"
                     ]
                 },
                 "url": {"type": "string"},
@@ -153,7 +153,7 @@ ACTION_SCHEMA = {
             "properties": {
                 "action": {
                     "type": "string",
-                    "enum": ["retry", "try_alternative", "mark_failed", "skip", "abort"]
+                    "enum": ["retry", "try_alternative", "mark_failed", "skip", "abort", "continue"]
                 },
                 "maxRetries": {"type": "integer"},
                 "onFailure": {"type": "string"},

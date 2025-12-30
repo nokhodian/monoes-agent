@@ -1,7 +1,7 @@
-from newAgent.src.robot.instagram import Instagram
-from newAgent.src.robot.linkedin import Linkedin
-from newAgent.src.robot.x import X
-from newAgent.src.robot.tiktok import Tiktok
+from src.robot.instagram import Instagram
+from src.robot.linkedin import Linkedin
+from src.robot.x import X
+from src.robot.tiktok import Tiktok
 
 def get_bot_class(platform):
     platform = platform.lower()

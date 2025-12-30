@@ -4,7 +4,6 @@ import QtQuick.Layouts 1.15
 
 Item {
     id: mainLayout
-    anchors.fill: parent
 
     RowLayout {
         anchors.fill: parent
@@ -58,18 +57,18 @@ Item {
             Layout.fillWidth: true
             initialItem: "DashboardPage.qml"
             
-            pushEnter: Transition {
-                PropertyAnimation { property: "opacity"; from: 0; to: 1; duration: 200 }
-            }
-            pushExit: Transition {
-                PropertyAnimation { property: "opacity"; from: 1; to: 0; duration: 200 }
-            }
-            replaceEnter: Transition {
-                PropertyAnimation { property: "opacity"; from: 0; to: 1; duration: 200 }
-            }
-            replaceExit: Transition {
-                PropertyAnimation { property: "opacity"; from: 1; to: 0; duration: 200 }
-            }
+            // pushEnter: Transition {
+            //     PropertyAnimation { property: "opacity"; from: 0; to: 1; duration: 200 }
+            // }
+            // pushExit: Transition {
+            //     PropertyAnimation { property: "opacity"; from: 1; to: 0; duration: 200 }
+            // }
+            // replaceEnter: Transition {
+            //     PropertyAnimation { property: "opacity"; from: 0; to: 1; duration: 200 }
+            // }
+            // replaceExit: Transition {
+            //     PropertyAnimation { property: "opacity"; from: 1; to: 0; duration: 200 }
+            // }
         }
     }
 }

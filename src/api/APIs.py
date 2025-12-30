@@ -175,10 +175,18 @@ class RestAPI:
     def set_authorization(token: str):
         RestAPI.id_token = token
         # Check if token is Bearer token or old token format
+        clean_token = token.replace('Bearer ', '') if token.startswith('Bearer ') else token
+        
         if token.startswith('Bearer '):
             RestAPI._auth_header['Authorization'] = token
         else:
             RestAPI._auth_header['Authorization'] = f'Bearer {token}'
+            
+        # Sync with FlatLay
+        try:
+            FlatLay.auth(clean_token)
+        except Exception as e:
+            logger.error(f"Error syncing with FlatLay: {e}")
 
     @classmethod
     def get_campaigns(cls):
@@ -1275,18 +1283,22 @@ class RestAPI:
         except Exception:
             pass
 
-        people_list = cls.map_social_users_to_person(cls, people_list)
+        people_list = cls.map_social_users_to_person(people_list)
 
         try:
             print(f"[API] create_people: payload size: {len(people_list) if people_list else 0}")
-        except Exception:
-            pass
+            # Debug: Print full payload for troubleshooting 401
+            import json
+            logger.info(f"[DEBUG] create_people payload: {json.dumps(people_list, indent=2)}")
+        except Exception as e:
+            logger.error(f"[DEBUG] Error printing payload: {e}")
 
         url = "https://monoes.me/rest/batch/people"
         headers = RestAPI._auth_header | {
             "User-Agent": "FlatlayBot",
             "Content-Type": "application/json"
         }
+        logger.info(f"[DEBUG] create_people headers: {headers}")
         res = cls._session.post(url=url, headers=headers, json=people_list, timeout=cls.timeout)
         return res
     
@@ -1317,6 +1329,7 @@ class RestAPI:
         return first_name, last_name
 
 
+    @classmethod
     def map_social_users_to_person(cls, profiles: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         Maps a list of profiles from a single social media source to a list of
@@ -1348,10 +1361,20 @@ class RestAPI:
             }
 
             # 1. Map common fields
-            full_name = profile.get("full_name") or profile.get("name") or ""
-            first_name, last_name = cls._split_name(full_name)
-            person_dict["name"]["firstName"] = first_name
-            person_dict["name"]["lastName"] = last_name
+            full_name = profile.get("full_name") or profile.get("name")
+            if full_name:
+                first_name, last_name = cls._split_name(full_name)
+                person_dict["name"]["firstName"] = first_name
+                person_dict["name"]["lastName"] = last_name
+            else:
+                # Fallback to username if name is missing
+                username = profile.get('platform_username') or profile.get('username')
+                if username:
+                    person_dict["name"]["firstName"] = username
+                    person_dict["name"]["lastName"] = "(Social Profile)"
+                else:
+                    person_dict["name"]["firstName"] = "Unknown"
+                    person_dict["name"]["lastName"] = "User"
 
             person_dict["avatarUrl"] = profile.get("image_url") or profile.get("avatar")
             

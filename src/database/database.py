@@ -28,7 +28,7 @@ class DataBase:
                     file.close()
                 except Exception as os_ex:
                     print(os_ex)
-            self.req = RestAPI('None')
+
             # Enable thread-safe mode for SQLite
             self._sql = sqlite3.connect(path, check_same_thread=False)
             self.cursor = self._sql.cursor()

@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 from datetime import datetime, timedelta
 import time
-from newAgent.src.database.database import DataBase as SessionStore
+from src.database.database import DataBase as SessionStore
 
 class AuthManager:
     def __init__(self, platform):

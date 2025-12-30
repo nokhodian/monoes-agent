@@ -16,6 +16,9 @@ sys.path.insert(0, str(project_root))
 from newAgent.core.bot import get_bot_class
 from newAgent.core.auth import AuthManager
 from newAgent.core.runner import ActionRunner
+from newAgent.src.database.database import DataBase
+from newAgent.src.api.APIs import RestAPI
+from newAgent.src.robot.flatlay import FlatLay
 from newAgent.utils.logger import setup_enhanced_logging
 
 # Configure logging
@@ -105,6 +108,16 @@ def run_action(platform, action_type, kwargs):
     print(f"Arguments: {kwargs}")
     print("=" * 60)
     
+    # Initialize API and Database
+    db = DataBase('MAC')
+    api_token = db.fetch_setting("api_token", "")
+    if api_token:
+        print(f"  ✓ Loaded CRM API token from database")
+        RestAPI.set_authorization(api_token)
+        FlatLay.auth_with_bearer_token(api_token)
+    else:
+        print(f"  ⚠ No CRM API token found in database. Saving might fail.")
+
     # Initialize Bot
     print("\n[1/3] Initializing bot...")
     try:

@@ -4,11 +4,11 @@
   "data": [
     {
       "name": "full_name",
-      "xpath": ".//h2 | .//span[contains(@class, 'x1lliihq') and not(ancestor::a)]",
+      "xpath": "//main//header//section//span[@dir='auto' and not(ancestor::h2) and not(ancestor::a) and not(ancestor::li)][1]",
       "alternatives": [
-        "//header//h2",
-        "//h1",
-        "(//span[contains(@class, 'x1lliihq')])[1]"
+        "//header//section//div[count(preceding-sibling::div) >= 1]//span[@dir='auto' and not(ancestor::li)]",
+        "//header//h1",
+        "//span[contains(@class, 'x1lliihq') and @dir='auto' and not(ancestor::li)][1]"
       ]
     },
     {
@@ -53,16 +53,21 @@
     },
     {
       "name": "website",
-      "xpath": "//header//section//a[@role='link' and @target='_blank']/@href",
+      "xpath": "//main//header//section//a[contains(@href, 'http') and not(contains(@href, 'instagram.com'))]",
       "alternatives": [
-        "//header//section//a[not(contains(@href, 'instagram.com'))]/@href"
+        "//main//header//section//a[@role='link' and @target='_blank']",
+        "//main//header//section//button[contains(., '.com') or contains(., '.org') or contains(., '.io')]",
+        "//main//header//svg[@aria-label='Link icon']/ancestor::button",
+        "//main//header//a[not(contains(@href, 'instagram.com'))]"
       ]
     },
     {
       "name": "verified",
-      "xpath": "//header//span[@title='Verified']",
+      "xpath": "//main//header//span[@title='Verified'] | //main//header//span[@aria-label='Verified']",
       "alternatives": [
-        "//span[contains(@title, 'Verified')]"
+        "//main//header//svg[@aria-label='Verified']",
+        "//span[contains(@title, 'Verified')]",
+        "//span[contains(@aria-label, 'Verified')]"
       ]
     }
   ]

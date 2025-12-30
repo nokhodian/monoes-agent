@@ -2,7 +2,7 @@ import logging
 
 def setup_enhanced_logging():
     """Add custom logging hooks to show step progress prominently."""
-    action_logger = logging.getLogger('newAgent.src.services.action_executor')
+    action_logger = logging.getLogger('src.services.action_executor')
     original_info = action_logger.info
     original_warning = action_logger.warning
     original_error = action_logger.error
