@@ -40,6 +40,7 @@ class Backend(QObject):
     socialStatusesChanged = pyqtSignal()
 
     savedTokenChanged = pyqtSignal()
+    storageTypeChanged = pyqtSignal(str, arguments=['type'])
 
     def __init__(self):
         super().__init__()
@@ -50,6 +51,7 @@ class Backend(QObject):
         self._actions = []
         self._runningId = ""
         self._savedToken = self.db.fetch_setting("api_token", "")
+        self._storageType = self.db.fetch_setting("storage_type", "crm")
         self._socialStatuses = {
             "Instagram": False,
             "LinkedIn": False,
@@ -112,6 +114,18 @@ class Backend(QObject):
     @pyqtProperty(str, notify=savedTokenChanged)
     def savedToken(self):
         return self._savedToken
+
+    @pyqtProperty(str, notify=storageTypeChanged)
+    def storageType(self):
+        return self._storageType
+
+    @storageType.setter
+    def storageType(self, value):
+        if self._storageType != value:
+            self._storageType = value
+            self.db.save_setting("storage_type", value)
+            self.storageTypeChanged.emit(value)
+            self.logger.info(f"Storage type changed to: {value}")
 
     def append_log(self, msg):
         self._logs += msg

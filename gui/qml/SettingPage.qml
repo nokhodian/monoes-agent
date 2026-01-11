@@ -134,6 +134,77 @@ Page {
                             }
                         }
                         
+                        // Data Storage Section
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 16
+                            
+                            Text {
+                                text: "Data Storage"
+                                font.pixelSize: 18
+                                font.bold: true
+                                color: "#1D1D1F"
+                            }
+                            
+                            Rectangle {
+                                Layout.fillWidth: true
+                                height: 60
+                                color: "white"
+                                radius: 12
+                                border.color: "#E5E5E5"
+                                border.width: 1
+                                
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.margins: 16
+                                    
+                                    ColumnLayout {
+                                        spacing: 4
+                                        Text { 
+                                            text: "Save to File"
+                                            font.pixelSize: 16
+                                            font.weight: Font.Medium
+                                            color: "#1D1D1F"
+                                        }
+                                        Text { 
+                                            text: backend.storageType === "file" ? "Results are written to local files" : "Results are sent to CRM"
+                                            font.pixelSize: 13
+                                            color: "#86868B"
+                                        }
+                                    }
+                                    
+                                    Item { Layout.fillWidth: true }
+                                    
+                                    Switch {
+                                        id: storageSwitch
+                                        checked: backend.storageType === "file"
+                                        onToggled: backend.storageType = checked ? "file" : "crm"
+                                        
+                                        indicator: Rectangle {
+                                            implicitWidth: 48
+                                            implicitHeight: 26
+                                            x: storageSwitch.leftPadding
+                                            y: parent.height / 2 - height / 2
+                                            radius: 13
+                                            color: storageSwitch.checked ? "#007AFF" : "#E5E5E5"
+                                            border.color: storageSwitch.checked ? "#007AFF" : "#E5E5E5"
+                                            
+                                            Rectangle {
+                                                x: storageSwitch.checked ? parent.width - width - 2 : 2
+                                                y: 2
+                                                width: 22
+                                                height: 22
+                                                radius: 11
+                                                color: "white"
+                                                Behavior on x { NumberAnimation { duration: 200 } }
+                                            }
+                                            Behavior on color { ColorAnimation { duration: 200 } }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         // Social Media Accounts Section
                         ColumnLayout {
                             Layout.fillWidth: true

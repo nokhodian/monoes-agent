@@ -21,6 +21,7 @@ from newAgent.src.services.action_variables import ActionVariableResolver, creat
 from newAgent.src.services.config_manager import ConfigManager
 from newAgent.src.services.config_helper import ConfigHelper
 from newAgent.src.services.action_error_handler import ActionErrorHandler
+from newAgent.src.services.file_storage import FileStorage
 from newAgent.src.data.attributes import Attrs
 from newAgent.src.robot.scraper import Bot
 
@@ -1308,29 +1309,49 @@ class ActionExecutor:
                 while len(self.context['extracted_items']) >= batch_size and api_client:
                     try:
                         batch = self.context['extracted_items'][:batch_size]
-                        # #region agent log
-                        # #endregion
-                        response = api_client.create_people(batch)
                         
-                        # Check for success
-                        is_success = False
-                        status_code = getattr(response, 'status_code', 200)
-                        
-                        if hasattr(response, 'status_code'):
-                            is_success = response.status_code < 400
-                        elif isinstance(response, dict):
-                            is_success = response.get('success', True)
-                        else:
-                            is_success = True
+                        # Check storage type
+                        storage_type = "crm"
+                        try:
+                            storage_type = self.config_manager.db.fetch_setting("storage_type", "crm")
+                        except Exception as e:
+                            logger.warning(f"Could not fetch storage_type, defaulting to 'crm': {e}")
+
+                        if storage_type == "file":
+                            action_name = getattr(self.action, 'type', 'unknown_action')
+                            platform = getattr(self.action, 'source', 'unknown_platform')
+                            full_name = f"{platform}_{action_name}"
                             
-                        if is_success:
-                            self.context['extracted_items'] = self.context['extracted_items'][batch_size:]
-                            logger.info(f"✅ Successfully saved batch of {len(batch)} items via API (Status: {status_code})")
+                            if FileStorage.save(batch, full_name):
+                                self.context['extracted_items'] = self.context['extracted_items'][batch_size:]
+                                logger.info(f"✅ Successfully saved batch of {len(batch)} items to file.")
+                            else:
+                                logger.error(f"❌ Failed to save batch of {len(batch)} items to file. Keeping items for retry.")
+                                break
                         else:
-                            logger.error(f"❌ Failed to save batch of {len(batch)} items. API returned status {status_code}. Keeping remaining {len(self.context['extracted_items'])} items for retry.")
-                            break # Stop flushing on failure
+                            # #region agent log
+                            # #endregion
+                            response = api_client.create_people(batch)
+                            
+                            # Check for success
+                            is_success = False
+                            status_code = getattr(response, 'status_code', 200)
+                            
+                            if hasattr(response, 'status_code'):
+                                is_success = response.status_code < 400
+                            elif isinstance(response, dict):
+                                is_success = response.get('success', True)
+                            else:
+                                is_success = True
+                                
+                            if is_success:
+                                self.context['extracted_items'] = self.context['extracted_items'][batch_size:]
+                                logger.info(f"✅ Successfully saved batch of {len(batch)} items via API (Status: {status_code})")
+                            else:
+                                logger.error(f"❌ Failed to save batch of {len(batch)} items. API returned status {status_code}. Keeping remaining {len(self.context['extracted_items'])} items for retry.")
+                                break # Stop flushing on failure
                     except Exception as api_err:
-                        logger.error(f"❌ Error saving data via API: {api_err}. Keeping items for retry.")
+                        logger.error(f"❌ Error saving data: {api_err}. Keeping items for retry.")
                         break # Stop flushing on error
             
             return {'success': True, 'saved_count': len(self.context.get('extracted_items', []))}
