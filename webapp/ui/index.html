@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Monoes Webapp</title>
+    <link rel="stylesheet" href="/ui/style.css">
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand">Monoes Webapp</div>
+      <div class="phase">Phase 1</div>
+    </header>
+    <main class="container">
+      <section class="card">
+        <div class="card-header">
+          <h1>Actions</h1>
+          <div class="filters">
+            <input type="text" id="q" placeholder="Search title">
+            <select id="state">
+              <option value="">All</option>
+              <option value="PENDING">Pending</option>
+              <option value="INPROGRESS">In Progress</option>
+              <option value="DONE">Done</option>
+            </select>
+            <button id="refresh">Refresh</button>
+            <button id="newAction" class="btn-accent">New Action</button>
+          </div>
+        </div>
+        <div id="actions-skeleton" class="skeleton-grid hidden"></div>
+        <table id="actions-table" class="table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Type</th>
+              <th>Platform</th>
+              <th>State</th>
+              <th>Created By</th>
+            </tr>
+          </thead>
+          <tbody id="actions-body"></tbody>
+        </table>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h1>Targets</h1>
+          <div class="filters">
+            <input type="text" id="actionId" placeholder="Action ID">
+            <button id="loadTargets">Load Targets</button>
+          </div>
+        </div>
+        <div id="targets-skeleton" class="skeleton-grid hidden"></div>
+        <table id="targets-table" class="table">
+          <thead>
+            <tr>
+              <th>Person</th>
+              <th>Platform</th>
+              <th>Link</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="targets-body"></tbody>
+        </table>
+      </section>
+    </main>
+    <div id="detail-overlay" class="overlay hidden">
+      <div class="detail-panel reveal">
+        <div class="detail-header">
+          <div>
+            <div id="detail-title" class="detail-title"></div>
+            <div id="detail-meta" class="detail-meta"></div>
+          </div>
+          <button id="detail-close" class="btn-close" aria-label="Close">✕</button>
+        </div>
+        <div class="detail-content">
+          <div class="detail-section">
+            <h2>Targets</h2>
+            <div id="detail-targets-skeleton" class="skeleton-grid hidden"></div>
+            <div id="detail-targets" class="targets-grid"></div>
+          </div>
+          <div class="detail-section">
+            <h2>Collected Profiles</h2>
+            <div id="detail-collected-skeleton" class="skeleton-grid hidden"></div>
+            <div id="detail-collected" class="profiles-grid"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="create-overlay" class="overlay hidden" aria-modal="true" role="dialog">
+      <div class="detail-panel reveal">
+        <div class="detail-header">
+          <div>
+            <div class="detail-title">Create New Action</div>
+            <div class="detail-meta">Required fields marked *</div>
+          </div>
+          <button id="create-close" class="btn-close" aria-label="Close">✕</button>
+        </div>
+        <div class="detail-content">
+          <form id="create-form" class="form-grid">
+            <label>
+              <span>Title *</span>
+              <input id="ca-title" type="text" required placeholder="e.g., Keyword Search - Instagram">
+            </label>
+            <label>
+              <span>Type *</span>
+              <select id="ca-type" required>
+                <option value="KEYWORD_SEARCH">KEYWORD_SEARCH</option>
+                <option value="BULK_MESSAGING">BULK_MESSAGING</option>
+                <option value="PUBLISH_CONTENT">PUBLISH_CONTENT</option>
+                <option value="PROFILE_INTERACTION">PROFILE_INTERACTION</option>
+              </select>
+            </label>
+            <label>
+              <span>State *</span>
+              <select id="ca-state" required>
+                <option value="PENDING">PENDING</option>
+                <option value="INPROGRESS">INPROGRESS</option>
+                <option value="PAUSE">PAUSE</option>
+                <option value="DONE">DONE</option>
+              </select>
+            </label>
+            <label>
+              <span>Platform *</span>
+              <select id="ca-platform" required>
+                <option value="INSTAGRAM">INSTAGRAM</option>
+                <option value="X">X</option>
+                <option value="LINKEDIN">LINKEDIN</option>
+                <option value="TELEGRAM">TELEGRAM</option>
+                <option value="EMAIL">EMAIL</option>
+                <option value="TIKTOK">TIKTOK</option>
+              </select>
+            </label>
+            <label>
+              <span>Created By *</span>
+              <input id="ca-createdBy" type="text" required placeholder="e.g., monoes-agent" value="monoes-agent">
+            </label>
+            <label>
+              <span>Owner ID *</span>
+              <input id="ca-ownerId" type="text" required placeholder="e.g., owner-1" value="owner-1">
+            </label>
+            <label class="wide">
+              <span>Subject</span>
+              <input id="ca-subject" type="text" placeholder="Optional subject">
+            </label>
+            <label class="wide">
+              <span>Message</span>
+              <textarea id="ca-message" rows="3" placeholder="Optional message"></textarea>
+            </label>
+            <label class="wide">
+              <span>Media URLs</span>
+              <input id="ca-media" type="text" placeholder="Comma-separated URLs">
+            </label>
+            <label>
+              <span>Scheduled Date</span>
+              <input id="ca-scheduled" type="datetime-local">
+            </label>
+            <label>
+              <span>Interval (min)</span>
+              <input id="ca-interval" type="number" min="0" value="0">
+            </label>
+            <label>
+              <span>Start Date</span>
+              <input id="ca-start" type="datetime-local">
+            </label>
+            <label>
+              <span>End Date</span>
+              <input id="ca-end" type="datetime-local">
+            </label>
+            <label class="wide">
+              <span>Campaign ID</span>
+              <input id="ca-campaign" type="text" placeholder="Optional campaign id">
+            </label>
+            <div class="form-actions">
+              <button type="button" id="ca-cancel" class="btn-muted">Cancel</button>
+              <button type="submit" id="ca-submit" class="btn-accent">Create Action</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+    <script src="/ui/app.js"></script>
+  </body>
+</html>
